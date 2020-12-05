@@ -47,7 +47,7 @@ FAIL:
 
 uint32_t writeFile(const uint8_t * buf, const char * filename, uint32_t &count) {
     // 2.write to /data/vendor/camera/xx.json
-    FILE *fpWrite = fopen(filename, "w");
+    FILE *fpWrite = fopen(filename, "wb");
     if (nullptr == fpWrite) {
         LOGE("file:%s open fail\n", filename);
         return -EIO;
@@ -92,7 +92,7 @@ int main() {
     rawFrame.width = 4208;
     rawFrame.height = 3120;
     rawFrame.bits = 8;
-    rawFrame.type = IMAGE_RAW_RGGB;
+    rawFrame.type = IMAGE_RAW_GRBG;
     rawFrame.isPacked = false;
     ImgFrame demosaicOut = rawFrame;
     demosaicOut.type = IMAGE_RGB;
@@ -103,7 +103,7 @@ int main() {
         LOGE("demsaic failed!");
     }
 
-    write_in_cnt = read_out_cnt * 2;
+    write_in_cnt = read_out_cnt * 3;
     writeFile((uint8_t*)demosaicOut.imgBuf, "../test_raw/output/raw_4208x3120_8bits_out.rgb", write_in_cnt);
 
     // LOGD("Demosaic E");
