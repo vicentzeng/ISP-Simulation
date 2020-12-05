@@ -6,6 +6,7 @@
  **/
 
 #include <iostream>
+#include <string.h>
 #include "ISPPipelineIntf.h"
 #include "./core/ISPLog.h"
 
@@ -63,6 +64,7 @@ uint32_t writeFile(const uint8_t * buf, const char * filename, uint32_t &count) 
 
 int main() {
     // Read input raw
+    int ret = 0;
     char filePath[256] = {0};
     uint32_t read_out_cnt = 0;
     uint32_t write_in_cnt = 0;
@@ -89,14 +91,21 @@ int main() {
     rawFrame.imgBuf = rawBuf;
     rawFrame.width = 4208;
     rawFrame.height = 3120;
-    rawFrame.bits = 16;
-    rawFrame.type = IMAGE_RAW;
+    rawFrame.bits = 8;
+    rawFrame.type = IMAGE_RAW_RGGB;
     rawFrame.isPacked = false;
     ImgFrame demosaicOut = rawFrame;
     demosaicOut.type = IMAGE_RGB;
     demosaicOut.imgBuf = new uint8_t[rawFrame.width * rawFrame.height * 3];
-    ispIntf.demosaic(&rawFrame, &demosaicOut);
-    
+    memset((void *)demosaicOut.imgBuf, 0, rawFrame.width * rawFrame.height * 3);
+    ret = ispIntf.demosaic(&rawFrame, &demosaicOut);
+    if( ret != 0) {
+        LOGE("demsaic failed!");
+    }
+
+    write_in_cnt = read_out_cnt * 2;
+    writeFile((uint8_t*)demosaicOut.imgBuf, "../test_raw/output/raw_4208x3120_8bits_out.rgb", write_in_cnt);
+
     // LOGD("Demosaic E");
     LOGI("ISP pipeline process out.\n");
 
