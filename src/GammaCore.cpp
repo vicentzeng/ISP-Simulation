@@ -4,12 +4,12 @@
 
 int geneTable(uint8_t *table) {
     double gamma = 1/1.5;   //2.2
-    printf("\n");
+    //printf("\n");
     for (int i = 2; i < 256; i++) {
         table[i] = (pow( (i)/256.0, gamma)) * 255;
-        printf("%d:%d ", i , (int)table[i]);
+        //printf("%d:%d ", i , (int)table[i]);
     }
-    printf("\n");
+    //printf("\n");
     return 0;
 }
 

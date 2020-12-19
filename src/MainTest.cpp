@@ -7,9 +7,7 @@
 
 #include <iostream>
 #include <string.h>
-//#include <opencv2/opencv.hpp>
-//125129
-//#include <opencv2/highgui.hpp>
+#include <opencv2/opencv.hpp>
 
 #include "ISPPipelineIntf.h"
 #include "./core/ISPLog.h"
@@ -17,12 +15,12 @@
 #include "./AwbCore.h"
 #include "./GammaCore.h"
 
-#define OUTPUT_PATH "../test_raw/output/"
+#define OUTPUT_PATH "../../test_raw/output/"
 
 #define LOG_LEVEL LOG_LEVEL_I
 
 using namespace std;
-//using namespace cv;
+using namespace cv;
 
 uint8_t * readFile2Buf(const char * filename, uint32_t &count) {
     size_t readSize = 0;
@@ -71,13 +69,23 @@ uint32_t writeFile(const uint8_t * buf, const char * filename, uint32_t &count) 
     return 0;
 }
 
+uint32_t writeFile(const uint8_t * buf, const char * path, const char * filename, uint32_t &count) {
+    char fullName[256] = {0};
+    sprintf(fullName, "%s/%s", path, filename);
+    return writeFile(buf,fullName, count);
+}
+
 int main() {
     // Read input raw
     int ret = 0;
     char filePath[256] = {0};
     uint32_t read_out_cnt = 0;
     uint32_t write_in_cnt = 0;
-    uint8_t* rawBuf = readFile2Buf( "../test_raw/raw_4208x3120_8bits.raw", read_out_cnt);
+    uint8_t* rawBuf = readFile2Buf( "../../test_raw/raw_4208x3120_8bits.raw", read_out_cnt);
+    if( rawBuf == 0) {
+        LOGE("readFile2Buf failed!");
+        return 0;
+    }
     LOGI("%s read:%ld\n", __func__, read_out_cnt);
 
     //sprintf(filePath, "%s/%s", OUTPUT_PATH, "isp_s0_raw_4208x3120_8bits.raw");
@@ -92,7 +100,7 @@ int main() {
         *(new16bitsRaw + i) = *(rawBuf + i);
     }
     write_in_cnt = read_out_cnt * 2;
-    writeFile((uint8_t*)new16bitsRaw, "../test_raw/output/PlaneTo16_4208x3120_Turn16bits_out.raw", write_in_cnt);
+    writeFile((uint8_t*)new16bitsRaw, OUTPUT_PATH, "PlaneTo16_4208x3120_Turn16bits_out.raw", write_in_cnt);
 
     // Demosaic
     LOGI("Demosaic E");
@@ -113,21 +121,21 @@ int main() {
     }
 
     write_in_cnt = read_out_cnt * 3;
-    writeFile((uint8_t*)demosaicOut.imgBuf, "../test_raw/output/Demosaic_4208x3120_8bits_out.rgb", write_in_cnt);
+    writeFile((uint8_t*)demosaicOut.imgBuf, OUTPUT_PATH, "Demosaic_4208x3120_8bits_out.rgb", write_in_cnt);
 
     //
     LOGD("AWB E");
     AwbCore awbCore;
     ImgFrame awbOut = demosaicOut;
     awbCore.process(&awbOut);
-    writeFile((uint8_t*)awbOut.imgBuf, "../test_raw/output/AWB_4208x3120_8bits_out.rgb", write_in_cnt);
+    writeFile((uint8_t*)awbOut.imgBuf, OUTPUT_PATH, "AWB_4208x3120_8bits_out.rgb", write_in_cnt);
 
     //GammaCore
     LOGD("Gamma E");
     GammaCore gammaCore;
     ImgFrame gammaOut = awbOut;
     gammaCore.process(&gammaOut);
-    writeFile((uint8_t*)gammaOut.imgBuf, "../test_raw/output/GAMMA_4208x3120_8bits_out.rgb", write_in_cnt);
+    writeFile((uint8_t*)gammaOut.imgBuf, OUTPUT_PATH, "GAMMA_4208x3120_8bits_out.rgb", write_in_cnt);
 
     LOGI("ISP pipeline process out.\n");
 
@@ -139,9 +147,10 @@ int main() {
     delete [] demosaicOut.imgBuf;
     demosaicOut.imgBuf = nullptr;
     //
-    //Mat img=imread("man.jpg");
-    //imshow("image",img);
-    //waitKey();
+    Mat img =imread("main.jpg");
+    imshow("image",img);
+    waitKey();
 
+    LOGI("exit\n");
     return 0;
 }
