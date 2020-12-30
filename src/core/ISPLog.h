@@ -7,7 +7,7 @@
 #include <ctype.h>
 
 #include <chrono>
-#define LOG_TAG "MemTest"
+#define LOG_TAG "ISP-Simulation"
 
 static std::chrono::steady_clock::time_point clock_ZERO = std::chrono::steady_clock::now();
 

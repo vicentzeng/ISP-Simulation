@@ -8,6 +8,8 @@
 #include <iostream>
 #include <string.h>
 #include <opencv2/opencv.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/imgproc/types_c.h>
 
 #include "ISPPipelineIntf.h"
 #include "./core/ISPLog.h"
@@ -34,13 +36,12 @@ uint8_t * readFile2Buf(const char * filename, uint32_t &count) {
     readSize = ftell(fp);       // 求出当前文件指针距离文件开始的字节数
     fseek(fp, 0, SEEK_SET);
     LOGD("%s readSize:%d\n", __func__, readSize);
-    if(readSize == 0)
-    {
+    if(readSize == 0) {
         LOGE("%s size is zero!\n", __func__);
         goto FAIL;
     }
     buffer = (uint8_t *)malloc(readSize);
-    if(buffer == NULL){
+    if (buffer == NULL) {
         LOGE("%s malloc failed\n", __func__);
     } else {
         count = fread((void *)buffer, 1, readSize, fp);
@@ -73,6 +74,22 @@ uint32_t writeFile(const uint8_t * buf, const char * path, const char * filename
     char fullName[256] = {0};
     sprintf(fullName, "%s/%s", path, filename);
     return writeFile(buf,fullName, count);
+}
+
+void writeMat2File(Mat mat, const char * path, const char * filename) {
+    char fullName[256] = {0};
+    sprintf(fullName, "%s/%s", path, filename);
+    string s_name = fullName;
+    imwrite(s_name, mat);
+}
+
+uint32_t writeRGB2Png(uint8_t * buf, const char * path,
+    const char * filename, int width, int height) {
+    Mat inMat(height, width, CV_8UC3, (void *)buf);
+    Mat outMat;
+    cvtColor(inMat, outMat, CV_RGB2BGR);
+    writeMat2File(outMat, path, filename);
+    return 0;
 }
 
 int main() {
@@ -121,22 +138,39 @@ int main() {
     }
 
     write_in_cnt = read_out_cnt * 3;
-    writeFile((uint8_t*)demosaicOut.imgBuf, OUTPUT_PATH, "Demosaic_4208x3120_8bits_out.rgb", write_in_cnt);
+    //writeFile((uint8_t*)demosaicOut.imgBuf, OUTPUT_PATH, "Demosaic_4208x3120_8bits_out.rgb", write_in_cnt);
+    writeRGB2Png((uint8_t*)demosaicOut.imgBuf, OUTPUT_PATH, "Demosaic_4208x3120_8bits_out.png",
+        rawFrame.width, rawFrame.height);
+    // NR
+    LOGI("NR E");
+    Mat rgbMat(rawFrame.height, rawFrame.width, CV_8UC3, demosaicOut.imgBuf);
+    LOGI("NR E1");
+    writeMat2File(rgbMat,  OUTPUT_PATH, "NR_4208x3120_8bits_in.png");
+    Mat out;
+    bilateralFilter(rgbMat, out, 25, 25/2, 25/2);
+    LOGI("NR E2");
+    writeMat2File(out, OUTPUT_PATH, "NR_4208x3120_8bits_out.png");
+    //copy to in
+    rgbMat = out.clone();   //? demosaicOut.imgBuf data is not changed
+    //writeFile((uint8_t*)out.data, OUTPUT_PATH, "NR_4208x3120_8bits_out.rgb", write_in_cnt);
 
-    //
-    LOGD("AWB E");
+    // AWB Gain and AWB algo
+    LOGI("AWB E");
     AwbCore awbCore;
     ImgFrame awbOut = demosaicOut;
+    awbOut.imgBuf = out.data;
     awbCore.process(&awbOut);
-    writeFile((uint8_t*)awbOut.imgBuf, OUTPUT_PATH, "AWB_4208x3120_8bits_out.rgb", write_in_cnt);
-
+    //writeFile((uint8_t*)awbOut.imgBuf, OUTPUT_PATH, "AWB_4208x3120_8bits_out.rgb", write_in_cnt);
+    writeRGB2Png((uint8_t*)awbOut.imgBuf, OUTPUT_PATH, "AWB_4208x3120_8bits_out.png",
+        rawFrame.width, rawFrame.height);
     //GammaCore
-    LOGD("Gamma E");
+    LOGI("Gamma E");
     GammaCore gammaCore;
     ImgFrame gammaOut = awbOut;
     gammaCore.process(&gammaOut);
-    writeFile((uint8_t*)gammaOut.imgBuf, OUTPUT_PATH, "GAMMA_4208x3120_8bits_out.rgb", write_in_cnt);
-
+    //writeFile((uint8_t*)gammaOut.imgBuf, OUTPUT_PATH, "GAMMA_4208x3120_8bits_out.rgb", write_in_cnt);
+    writeRGB2Png((uint8_t*)gammaOut.imgBuf, OUTPUT_PATH, "GAMMA_4208x3120_8bits_out.png",
+        rawFrame.width, rawFrame.height);
     LOGI("ISP pipeline process out.\n");
 
     // Release resource
@@ -147,7 +181,8 @@ int main() {
     delete [] demosaicOut.imgBuf;
     demosaicOut.imgBuf = nullptr;
     //
-    Mat img =imread("main.jpg");
+    LOGD("openCV test E");
+    Mat img = imread("main.jpg");
     imshow("image",img);
     waitKey();
 
