@@ -83,7 +83,16 @@ void writeMat2File(Mat mat, const char * path, const char * filename) {
     imwrite(s_name, mat);
 }
 
-uint32_t writeRGB2Png(uint8_t * buf, const char * path,
+void writeRgbMat2File(Mat mat, const char * path, const char * filename) {
+    char fullName[256] = {0};
+    sprintf(fullName, "%s/%s", path, filename);
+    string s_name = fullName;
+    Mat outMat;
+    cvtColor(mat, outMat, CV_RGB2BGR);
+    imwrite(s_name, outMat);
+}
+
+uint32_t writeRGB2Png(uint8_t* buf, const char * path,
     const char * filename, int width, int height) {
     Mat inMat(height, width, CV_8UC3, (void *)buf);
     Mat outMat;
@@ -157,15 +166,18 @@ int runIspPipeline(uint8_t* rawBuf, int width, int height, int raw_bits, int buf
     //writeFile((uint8_t*)demosaicOut.imgBuf, OUTPUT_PATH, "Demosaic_4208x3120_8bits_out.rgb", write_in_cnt);
     writeRGB2Png((uint8_t*)demosaicOut.imgBuf, OUTPUT_PATH, "Demosaic_4208x3120_8bits_out.png",
         rawFrame.width, rawFrame.height);
+
     // NR
+    cv::Mat rgbMat(rawFrame.height, rawFrame.width, CV_8UC3, demosaicOut.imgBuf);
+
     LOGI("NR E");
-    Mat rgbMat(rawFrame.height, rawFrame.width, CV_8UC3, demosaicOut.imgBuf);
+
     LOGI("NR E1");
-    writeMat2File(rgbMat,  OUTPUT_PATH, "NR_4208x3120_8bits_in.png");
+    writeRgbMat2File(rgbMat,  OUTPUT_PATH, "NR_4208x3120_8bits_in.png");
     Mat out;
     bilateralFilter(rgbMat, out, 25, 25/2, 25/2);
     LOGI("NR E2");
-    writeMat2File(out, OUTPUT_PATH, "NR_4208x3120_8bits_out.png");
+    writeRgbMat2File(out, OUTPUT_PATH, "NR_4208x3120_8bits_out.png");
     //copy to in
     rgbMat = out.clone();   //? demosaicOut.imgBuf data is not changed
     //writeFile((uint8_t*)out.data, OUTPUT_PATH, "NR_4208x3120_8bits_out.rgb", write_in_cnt);
