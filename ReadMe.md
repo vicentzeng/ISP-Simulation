@@ -4,7 +4,7 @@
 
 **开发环境**：C++、 opencv、vs code + cmake tool
 
-**实现基本的功能**  : Demosaic、NR 、AWB、Gamma
+**实现基本的功能**  : Demosaic(双线性)、NR(双边) 、AWB(灰度世界)、Gamma(x^1.5)
 
 
 
